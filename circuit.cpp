@@ -77,7 +77,7 @@ void Circuit::update() {
   // U::die("Circuit::update : non implant�e");
   this->partial_clear();
   logn6("Circuit::update: equilibage pour " + U::to_s(*remorque));
-  this->equilibrate();
+  this->equilibrate_eleve();
 
   // Mise � jour distance parcourue totale et d�s�quilibre global
   logn6("Circuit::update: mise � jour des distances du circuit " +

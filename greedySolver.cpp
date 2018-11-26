@@ -57,8 +57,11 @@ bool GreedySolver::solve() {
       if(diff >= 0) {
           // le camion peut fournir les vélos, il est choisi !
         if(charge_max - charge_actuelle < diff) {
+          logn5("GreedySolver::solve: ajout de la station " + tmp_station->name +
+                " à la remorque " + tmp_circuit->remorque->name);
+
           tmp_circuit->stations.push_back(tmp_station);
-          tmp_circuit->equilibrate_eleve(); // TODO verifier que ça va bien ici !
+          tmp_circuit->update(); // TODO verifier que ça va bien ici !
           candidate_found = true;
           break;
 
@@ -74,8 +77,12 @@ bool GreedySolver::solve() {
         // le camion peut donner les vélos : il est choisi !
         if(charge_actuelle > abs(diff)) {
           tmp_circuit->stations.push_back(tmp_station);
-          tmp_circuit->equilibrate_eleve(); // TODO : vérifier que ça va bien ici
+          tmp_circuit->update(); // TODO : vérifier que ça va bien ici
           candidate_found = true;
+
+          logn5("GreedySolver::solve: ajout de la station " + tmp_station->name +
+                " à la remorque " + tmp_circuit->remorque->name);
+
           break;
         } // sinon, on l'ajoute en candidat
         else {
@@ -95,11 +102,17 @@ bool GreedySolver::solve() {
      */
 
     if(!candidate_found) {
+      logn5("GreedySolver::solve: ajout de la station par défaut " + tmp_station->name +
+            " à la remorque " + sol->circuits[candidat.first]->remorque->name);
       sol->circuits[candidat.first]->stations.push_back(tmp_station);
     }
   }
 
-  found = false;
+  sol->update();
+
+  this->found = true;
+  this->solution = sol;
+  logn3("GreedySolver::solve: END");
   return found;
 }
 
