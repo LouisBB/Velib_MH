@@ -1,14 +1,14 @@
 #include "solver.hpp"
 
 GreedySolver::GreedySolver(const Instance* inst) : Solver::Solver(inst) {
-  logn1("GreedySolver: résolution par glouton (intelligent) pour " + inst->name);
+  logn2("GreedySolver START Résolution par algorithme glouton intelligent.\n"
+        " inst: " + inst->name);
 
-  cerr << "\nGreedySolver non implanté : AU BOULOT !" << endl;
-  exit(1);
-  logn1("GreedySolver END.");
+  this->solution = new Solution(inst);
+  logn2("GreedySolver END construit.");
 }
 GreedySolver::~GreedySolver() {
-  // TODO
+  delete this->solution;
 }
 // Méthode principale de ce solver, principe :
 //

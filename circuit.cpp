@@ -19,13 +19,13 @@ Circuit::Circuit(const Instance *inst, Remorque *remorque) : inst(inst) {
 Circuit::Circuit(const Instance *inst, Remorque *remorque,
                  const vector<Station *> &stations)
     : Circuit(inst, remorque) {
-  // On pourrait utiliser la méthode assign plus souple
+  // On pourrait utiliser la m�thode assign plus souple
   // this->stations.assign(stations.begin(), stations.end());
   this->stations = stations;
 }
 
 Circuit::Circuit(const Circuit *other) {
-  // U::die("Circuit::Circuit(const Circuit* other) NON TESTÉ (PLANTE) !");
+  // U::die("Circuit::Circuit(const Circuit* other) NON TEST� (PLANTE) !");
 
   // CECI FONCTIONNE AUSSI (avec copie des listes et maps le 22/2/2016)
   this->stations = vector<Station *>(other->stations);
@@ -53,7 +53,7 @@ void Circuit::copy(const Circuit *other) {
   this->depots = other->depots;
   this->charges = other->charges;
 }
-// Supprime les informations d'équilibrage de ce circuit
+// Supprime les informations d'�quilibrage de ce circuit
 // (ne modifie pas le vecteur de stations !)
 void Circuit::partial_clear() {
   this->charge_init = 0;
@@ -65,54 +65,54 @@ void Circuit::partial_clear() {
   // this->charges->resize(this->stations->size(), 0); // ssi vector
 }
 
-// Vide entièrement le circuit
+// Vide enti�rement le circuit
 void Circuit::clear() {
   this->partial_clear();
   this->stations.clear();
 }
 
-// Recalcule l'équilibrage et met à jour les attributs dérivés
+// Recalcule l'�quilibrage et met � jour les attributs d�riv�s
 void Circuit::update() {
   logn5("Circuit::update BEGIN");
-  // U::die("Circuit::update : non implantée");
+  // U::die("Circuit::update : non implant�e");
   this->partial_clear();
   logn6("Circuit::update: equilibage pour " + U::to_s(*remorque));
   this->equilibrate();
 
-  // Mise à jour distance parcourue totale et déséquilibre global
-  logn6("Circuit::update: mise à jour des distances du circuit " +
+  // Mise � jour distance parcourue totale et d�s�quilibre global
+  logn6("Circuit::update: mise � jour des distances du circuit " +
         U::to_s(*remorque));
   this->length = inst->get_dist(this->stations, this->remorque);
   logn5("Circuit::update END");
 }
 
-// Méthode d'équilibrage d'un circuit
-// Version stupide pour le proto des élèves : n'équilibre rien du tout !
+// M�thode d'�quilibrage d'un circuit
+// Version stupide pour le proto des �l�ves : n'�quilibre rien du tout !
 void Circuit::equilibrate_dummy() {
   logn6("Circuit::equilibrate BEGIN");
 
   // version de base minimaliste non optimale mais correcte :
   // - on part avec une remorque vide,
-  // - rien n'est déposé en chaque station,
-  // - on déduire les déséquibres par station !
+  // - rien n'est d�pos� en chaque station,
+  // - on d�duire les d�s�quibres par station !
   for (const auto &station : this->stations) {
     logn7(station->to_s_long());
 
-    // la remorque ne dépose rien à cette station
+    // la remorque ne d�pose rien � cette station
     logn7("Circuit::equilibrate: avant maj depots");
     this->depots[station] = 0;
 
-    // le nouveau contenu de la remorque reste donc inchangé
+    // le nouveau contenu de la remorque reste donc inchang�
     logn7("Circuit::equilibrate: avant maj charges");
     this->charges[station] = charge_init;
 
-    // incrémentation du desequilibre du circuit
+    // incr�mentation du desequilibre du circuit
     logn7("Circuit::equilibrate: avant maj desequilibre");
     this->desequilibre += abs(station->deficit());
   }
   // Calcul savant de la charge initiale de la remorque pour garantir les
-  // dépots et retraits qui viennent d'être calculés
-  this->charge_init = 0;  // même si c'est déjà fait par ailleurs !
+  // d�pots et retraits qui viennent d'�tre calcul�s
+  this->charge_init = 0;  // m�me si c'est d�j� fait par ailleurs !
   logn6("Circuit::equilibrate END");
 }
 
@@ -122,54 +122,94 @@ void Circuit::equilibrate() {
 }
 
 void Circuit::equilibrate_eleve() {
-  // logn6("Circuit::equilibrate full BEGIN");
-  // int charge_min = 0;
-  // int charge_max = this->remorque->capa;
+  logn6("Circuit::equilibrate full BEGIN");
+  int charge_min = 0;
+  int charge_max = this->remorque->capa;
 
-  // ... AU BOULOT ! ...
+  // on cherche le premier entrepot en d�ficit
+  int i0 = 0;
+  int charge_depart = 0;
+  for(const auto &station : this->stations){
+    int diff = station->nbvp - station->ideal;
+
+    // stop � la premi�re station en d�ficit
+    if(diff < 0)
+      break;
+
+    // on ajoute le nombre de v�los � ajouter � la station dans le camion
+    charge_depart += diff;
+    i0++;
+  }
+
+  // si la charge max est d�pass�e, on la reset.
+  if(charge_depart > charge_max)
+    charge_depart = charge_max;
+
+  this->charge_init = charge_depart;
+
+  // on proc�de alors � l'�quilibrage des stations
+  int charge_actuelle = charge_depart;
+  for(const auto &station : this->stations) {
+    int diff = station->nbvp - station->ideal;
+
+    // station en surplus
+    if(diff >= 0) {
+      int charge_supplementaire = min(diff, charge_max - charge_actuelle);
+      charge_actuelle += charge_supplementaire;
+
+      station->nbvp -= charge_supplementaire;
+    } else {
+      int charge_deposee = min(abs(diff), charge_actuelle);
+      charge_actuelle -= charge_deposee;
+      station->nbvp += charge_deposee;
+    }
+
+    this->charges[station] = charge_actuelle;
+    this->desequilibre += abs(station->deficit());
+  }
 
   // logn6("Circuit::equilibrate END");
 }
 
-// Insertion d'une station dans un circuit à la position indiquée.
+// Insertion d'une station dans un circuit � la position indiqu�e.
 // - pos est un entier >= -1
-// - si pos vaut -1 : insère à la fin
-// - si pos vaut 0 (ou est absent) : insère au début
-// - si pos vaut stations->size() : insère à la fin
-// - si pos vaut plus que stations->size(), alors pos est forcé pour être
+// - si pos vaut -1 : ins�re � la fin
+// - si pos vaut 0 (ou est absent) : ins�re au d�but
+// - si pos vaut stations->size() : ins�re � la fin
+// - si pos vaut plus que stations->size(), alors pos est forc� pour �tre
 //   entre 0 et stations->size() (inclu !) par un modulo.
 //
-// L'appel à update est à la charge de l'appelant
+// L'appel � update est � la charge de l'appelant
 //
 void Circuit::insert(Station *station, int pos) {
   logn6("Circuit::insert BEGIN " + station->name + " pos=" + U::to_s(pos));
   if (pos == -1) {
     this->stations.push_back(station);
   } else {
-    // On impose à pos d'être entre 0 et size (inclue)
+    // On impose � pos d'�tre entre 0 et size (inclue)
     pos = pos % (1 + this->stations.size());
 
     auto it = this->stations.begin();
-    // on avance l'itérateur jusqu'à la position pos
+    // on avance l'it�rateur jusqu'� la position pos
     std::advance(it, pos);  // version STL
     // for (int i = 0; i < pos; ++i) {
     //     it++; // version manuelle
     // }
 
-    // on procède à l'insertion
+    // on proc�de � l'insertion
     this->stations.insert(it, station);
   }
   logn6("Circuit::insert END");
 }
 
-// Ajout d'une station à la fin du circuit.
-// L'appel à update est à la charge de l'appelant
+// Ajout d'une station � la fin du circuit.
+// L'appel � update est � la charge de l'appelant
 //
 void Circuit::append(Station *station) { this->insert(station, -1); }
 
-// Insertion d'une station dans un circuit à une position est aléatoire.
+// Insertion d'une station dans un circuit � une position est al�atoire.
 //
-// L'appel à update est à la charge de l'appelant
+// L'appel � update est � la charge de l'appelant
 //
 void Circuit::insert_rand(Station *station) {
   int pos = 0;
@@ -181,19 +221,19 @@ void Circuit::insert_rand(Station *station) {
           station->name + " pos=" + U::to_s(pos));
   }
   auto it = this->stations.begin();
-  // on avance l'itérateur jusqu'à la position pos
+  // on avance l'it�rateur jusqu'� la position pos
   std::advance(it, pos);
 
-  // on procède à l'insertion
+  // on proc�de � l'insertion
   this->stations.insert(it, station);
   logn5("Circuit::insert_rand END");
 }
 
-// Cette brique d'insertion est opérationnelle (mais suppose que la brique
-// d'équilibrage est faite), mais pas nécessairement efficace !
+// Cette brique d'insertion est op�rationnelle (mais suppose que la brique
+// d'�quilibrage est faite), mais pas n�cessairement efficace !
 //
 void Circuit::insert_best(Station *station) {
-  // Log::level += 0; // on peut modifier le level juste pour cette méthode...
+  // Log::level += 0; // on peut modifier le level juste pour cette m�thode...
   string pref = "Circuit::insert_best (" + this->remorque->name + ") ";
   logn5(pref + "BEGIN " + " stations.size: " + U::to_s(this->stations.size()) +
         " insertion de:" + station->name);
@@ -203,17 +243,17 @@ void Circuit::insert_best(Station *station) {
 
   int pos = 0;
   if (this->stations.size() == 0) {
-    // circuit vide. Pas besoin de faire de pré-insertion pour trouver la
-    // meilleure position : il suffit d'insérer la nouvelle station à la fin
+    // circuit vide. Pas besoin de faire de pr�-insertion pour trouver la
+    // meilleure position : il suffit d'ins�rer la nouvelle station � la fin
     this->stations.insert(this->stations.end(),
-                          station);  // equivalent à push_bak(...)
+                          station);  // equivalent � push_bak(...)
     this->update();
   } else {
     auto it = this->stations.begin();
-    // On va tester n+1 positions d'insertion (y compris après la dernière)
+    // On va tester n+1 positions d'insertion (y compris apr�s la derni�re)
     while (it != this->stations.end()) {
       auto it2 = this->stations.insert(it, station);
-      // On doit mettre à jour ce circuit avant d'en extraire le coût !
+      // On doit mettre � jour ce circuit avant d'en extraire le co�t !
       this->update();
       int cost = this->get_cost();
       if (cost < best_cost) {
@@ -222,12 +262,12 @@ void Circuit::insert_best(Station *station) {
         best_it = it;
       } else {
       }
-      // On remet le circuit en état avant de passer à station suivante
+      // On remet le circuit en �tat avant de passer � station suivante
       this->stations.erase(it2);
-      it++;  // valable même si it==end()
+      it++;  // valable m�me si it==end()
       pos++;
     }
-    // On procède effectivement à la meilleure insertion
+    // On proc�de effectivement � la meilleure insertion
     this->stations.insert(best_it, station);
     this->update();
   }
@@ -238,7 +278,7 @@ void Circuit::insert_best(Station *station) {
     logn6(pref + msg + this->to_s_long());
   }
 }
-// Le comportement de l'insertion est définie par l'option passé
+// Le comportement de l'insertion est d�finie par l'option pass�
 // au lancement du programme (--station-inserter alias --sinserter)
 void Circuit::insert_from_option(Station *station) {
   const string sinserter = Options::args->station_inserter;
@@ -252,13 +292,13 @@ void Circuit::insert_from_option(Station *station) {
     this->insert_rand(station);
   } else {
     if (sinserter == "NONE") {
-      cout << "La valeur par défaut NONE doit être modifée par le solveur.\n";
+      cout << "La valeur par d�faut NONE doit �tre modif�e par le solveur.\n";
     }
     U::die("station_inserter inconnu : " + U::to_s(sinserter));
   }
 }
 
-// Supprime et retourne la station en position pos ;  pos doit être
+// Supprime et retourne la station en position pos ;  pos doit �tre
 // entre 0 et stations.size()-1
 //
 Station *Circuit::erase(int pos) {
@@ -267,23 +307,23 @@ Station *Circuit::erase(int pos) {
     raise("ERREUR Circuit::erase : pos hors borne : " + U::to_s(pos));
   }
   auto it = this->stations.begin();
-  // on avance l'itérateur jusqu'à la position pos
+  // on avance l'it�rateur jusqu'� la position pos
   std::advance(it, pos);
-  Station *station = *it;  // La station à retourner avant son effacement
+  Station *station = *it;  // La station � retourner avant son effacement
   this->stations.erase(it);
   logn5("Circuit::erase END");
   return station;
 }
 
-// Déplace la station de la position i1 devant la station en position i2.
-// i2 sera la nouvelle position après insertion.
+// D�place la station de la position i1 devant la station en position i2.
+// i2 sera la nouvelle position apr�s insertion.
 void Circuit::move(int i1, int i2) {
   if (log5()) {
     cout << "Circuit::move BEGIN "
          << " i1=" << i1 << " i2=" << i2 << endl;
   }
   if (i1 == i2) {
-    return;  // rien à faire !
+    return;  // rien � faire !
   }
   if (i1 < 0 || i1 > this->stations.size() - 1) {
     raise("ERREUR Circuit::move : i1 hors borne : " + U::to_s(i1));
@@ -292,7 +332,7 @@ void Circuit::move(int i1, int i2) {
     raise("ERREUR Circuit::move : i2 hors borne : " + U::to_s(i2));
   }
   auto it = this->stations.begin();
-  // on avance l'itérateur jusqu'à la position i
+  // on avance l'it�rateur jusqu'� la position i
   std::advance(it, i1);
   Station *station = *it;
   this->stations.erase(it);
@@ -300,7 +340,7 @@ void Circuit::move(int i1, int i2) {
   logn5("Circuit::move END");
 }
 
-// Supprime la station de la position i1 et la réinsère à la meilleure position
+// Supprime la station de la position i1 et la r�ins�re � la meilleure position
 // possible.
 void Circuit::move_best(int i1) {
   if (log5()) {
@@ -311,7 +351,7 @@ void Circuit::move_best(int i1) {
     raise("ERREUR Circuit::move_best : i1 hors borne : " + U::to_s(i1));
   }
   auto it = this->stations.begin();
-  // on avance l'itérateur jusqu'à la position i
+  // on avance l'it�rateur jusqu'� la position i
   std::advance(it, i1);
   Station *station = *it;
   this->stations.erase(it);
@@ -319,9 +359,9 @@ void Circuit::move_best(int i1) {
   logn5("Circuit::move_best END");
 }
 
-// Déplace la station de la position i1 de l'objet courant devant la station
+// D�place la station de la position i1 de l'objet courant devant la station
 // en position i2 de l'objet other
-// i2 sera la nouvelle position après insertion
+// i2 sera la nouvelle position apr�s insertion
 // i1 \in [0, size1-1]
 // i2 \in [0, size2]  (size2 inclu pour ajout en fin du circuit c2)
 void Circuit::move_to(int i1, Circuit *other, int i2) {
@@ -337,7 +377,7 @@ void Circuit::move_to(int i1, Circuit *other, int i2) {
     raise("ERREUR Circuit::move_to : i2 hors borne : " + U::to_s(i2));
   }
   auto it = this->stations.begin();
-  // on avance l'itérateur jusqu'à la position i
+  // on avance l'it�rateur jusqu'� la position i
   std::advance(it, i1);
   Station *station = *it;
   this->stations.erase(it);
@@ -345,8 +385,8 @@ void Circuit::move_to(int i1, Circuit *other, int i2) {
   logn5("Circuit::move_to END");
 }
 
-// Supprime la station de la position i1 de l'objet courant et l'insère dans
-// le circuit other à la meilleures position possible.
+// Supprime la station de la position i1 de l'objet courant et l'ins�re dans
+// le circuit other � la meilleures position possible.
 // i1 \in [0, size1-1]
 //
 void Circuit::move_best_to(int i1, Circuit *other) {
@@ -358,7 +398,7 @@ void Circuit::move_best_to(int i1, Circuit *other) {
     raise("ERREUR Circuit::move_best_to : i1 hors borne : " + U::to_s(i1));
   }
   auto it = this->stations.begin();
-  // on avance l'itérateur jusqu'à la position i
+  // on avance l'it�rateur jusqu'� la position i
   std::advance(it, i1);
   Station *station = *it;
   this->stations.erase(it);
@@ -371,15 +411,15 @@ void Circuit::move_best_to(int i1, Circuit *other) {
 // i2 (exclue)
 //
 // Principe :
-// - on swap les stations deux à deux en partant des extrémités
+// - on swap les stations deux � deux en partant des extr�mit�s
 //   de la branche (i1 et i2-1) et en se rapprochant jusqu'au centre.
 //
 // - EFFETS DE BORD : exit() si bornes incorrectes
-// - LA SOLUTION N'EST PAS MISE À JOUR ICI ! (pas de update)
+// - LA SOLUTION N'EST PAS MISE � JOUR ICI ! (pas de update)
 //
 void Circuit::reverse_branch(int i1, int i2) {
   //
-  // 1. vérification des paramèters i1 et i2 (on assure i1 < i2)
+  // 1. v�rification des param�ters i1 et i2 (on assure i1 < i2)
   //
   if (i1 < 0 || i1 >= this->stations.size()) {  //  ATTENTION >= ici
     raise("ERREUR reverse_branch : i1 hors borne : " + U::to_s(i1));
@@ -392,16 +432,16 @@ void Circuit::reverse_branch(int i1, int i2) {
     i2 = i1;
     i1 = tmp;
   } else if (i1 == i2) {
-    return;  // rien à faire
+    return;  // rien � faire
   } else if (i2 - i1 <= 1) {
-    return;  // rien à faire si égale ou si différence de 1
+    return;  // rien � faire si �gale ou si diff�rence de 1
   }
   // assert i1 < i2
 
   //
   // 2. inversion de la branche
   //
-  i2--;  // pour pointer sur le dernier élément, et non pas le post-dernier !
+  i2--;  // pour pointer sur le dernier �l�ment, et non pas le post-dernier !
   while (i2 > i1) {
     Station *s_tmp = this->stations[i1];
     this->stations[i1] = this->stations[i2];
@@ -410,28 +450,28 @@ void Circuit::reverse_branch(int i1, int i2) {
     i2--;
   }
 }
-// Suppression d'une branche de ce circuit de i1 (inclu) à i2 (exclue) et
+// Suppression d'une branche de ce circuit de i1 (inclu) � i2 (exclue) et
 // insertion dans le circuit other devant la position i3.
-// Si reverse vaut true, alors la branche est inversée avant insertion
-// Domaines des paramètres :
+// Si reverse vaut true, alors la branche est invers�e avant insertion
+// Domaines des param�tres :
 // - i1 : [0,size1[ (size1 exclu)
 // - i2 : [1,size1] (size1 inclu)
 // - i3 : [0,size2] (size2 inclu)
 // - i1 <= i2
-// Si |i2-i1| == 1 alors on déplace l'élément [i1]
+// Si |i2-i1| == 1 alors on d�place l'�l�ment [i1]
 // Si i1 == i2     alors on ne fait rien
 //
 // - EFFETS DE BORD : exit() si bornes incorrectes ou si this==other
-// - LA SOLUTION N'EST PAS MISE À JOUR ! (pas de update)
+// - LA SOLUTION N'EST PAS MISE � JOUR ! (pas de update)
 //
 void Circuit::move_branch_to(int i1, int i2, Circuit *other, int i3,
                              bool reverse) {
-  // U::die("Circuit::move_branch_to non implantée !\n");
+  // U::die("Circuit::move_branch_to non implant�e !\n");
   if (this == other) {
-    cerr << "move_branch_to ERREUR : this et other même object ! " << endl;
+    cerr << "move_branch_to ERREUR : this et other m�me object ! " << endl;
     exit(1);
   }
-  // 07/12/2017 TODO (nécessite post-vérification : mettre i1 < 1)
+  // 07/12/2017 TODO (n�cessite post-v�rification : mettre i1 < 1)
   if (i1 < 0 || i1 >= this->stations.size()) {  //  ATTENTION >= ici
     cerr << "move_branch_to ERREUR : i1 hors borne : " << i1 << endl;
     exit(1);
@@ -459,7 +499,7 @@ void Circuit::move_branch_to(int i1, int i2, Circuit *other, int i3,
   advance(it3, i3);
 
   ////////////////////////////////////
-  // 1. Construction du vector de la tranche à transférer
+  // 1. Construction du vector de la tranche � transf�rer
   vector<Station *> tmp_stations = vector<Station *>(i2 - i1);
   for (auto i = i1; i < i2; i++) {
     // si reverse est true : on commence par la fin
@@ -475,28 +515,28 @@ void Circuit::move_branch_to(int i1, int i2, Circuit *other, int i3,
   ////////////////////////////////////
 
 }
-// Déplacement d'une branche [i1,i2[ de ce circuit en position i3
-// avec inversion éventuelle.
+// D�placement d'une branche [i1,i2[ de ce circuit en position i3
+// avec inversion �ventuelle.
 // Le bloc contenant la branche [i1,i2[ commence donc en i3
-// Précondition : i3 <= size-(i2-i1).
+// Pr�condition : i3 <= size-(i2-i1).
 //
-// Domaines des paramètres :
+// Domaines des param�tres :
 // - i1 : [0,size[ (size exclu)
 // - i2 : [1,size] (size inclu)
 // - i3 : [0,size] (size inclu)
 // - i1 <= i2
 //
 // Principe :
-// 0. si (i1=i3 et reverse==false) return (rien à faire).
-// 1. Créer un vector temporaire
+// 0. si (i1=i3 et reverse==false) return (rien � faire).
+// 1. Cr�er un vector temporaire
 // 2. y copier la branche [i1,i2[
-//    (avec inversion éventuelle selon option reverse).
+//    (avec inversion �ventuelle selon option reverse).
 // si i3 < i1
-//   3.1 avancer les éléments depuis i3 jusqu'à i1-1 de +(i2-i1)
+//   3.1 avancer les �l�ments depuis i3 jusqu'� i1-1 de +(i2-i1)
 // sinon si i3 > i1
-//   3.2 reculer les éléments depuis i2 jusqu'à (i2-1)+(i3-i1) de (i2-i1)
+//   3.2 reculer les �l�ments depuis i2 jusqu'� (i2-1)+(i3-i1) de (i2-i1)
 // fin
-// 4 recopier le vector tmp depuis i3 (jusqu'à i3+i2-i1)
+// 4 recopier le vector tmp depuis i3 (jusqu'� i3+i2-i1)
 //
 // Exemple
 //  circuit :     0 1 2 a b c d e 8 9    3,8,_
@@ -513,7 +553,7 @@ void Circuit::move_branch_to(int i1, int i2, Circuit *other, int i3,
 //
 //
 void Circuit::move_branch(int i1, int i2, int i3, bool reverse) {
-  if (i1 == i3 && reverse == false) return;     // rien à faire !
+  if (i1 == i3 && reverse == false) return;     // rien � faire !
   if (i1 < 0 || i1 >= this->stations.size()) {  //  ATTENTION >= ici
     cerr << "move_branch ERREUR : i1 hors borne : " << i1 << endl;
     exit(1);
@@ -531,7 +571,7 @@ void Circuit::move_branch(int i1, int i2, int i3, bool reverse) {
     exit(1);
   }
 
-  // Construction du vecteur temporaire d ela tranche à déplacer
+  // Construction du vecteur temporaire d ela tranche � d�placer
   vector<Station *> tmp_stations = vector<Station *>(i2 - i1);
   for (auto i = i1; i < i2; i++) {
     // si reverse est true : on commence par la fin
@@ -552,13 +592,13 @@ void Circuit::move_branch(int i1, int i2, int i3, bool reverse) {
     }
   } else {  // assert (i1 < i3 < i2)
     // il faut avancer le petit bloc [i2, i2+(i3-i1-1)] de len
-    // (ce petit bloc passe de gauche à droite de la branche)
+    // (ce petit bloc passe de gauche � droite de la branche)
     for (int i = i2; i <= i2 + (i3 - i1 - 1); i++) {
       // A_FINIR();
       this->stations[i - len] = this->stations[i];
     }
   }
-  // Réinsérer le tableau tampon
+  // R�ins�rer le tableau tampon
   for (int i = 0; i < tmp_stations.size(); i++) {
     this->stations[i3 + i] = tmp_stations[i];
   }
@@ -566,17 +606,17 @@ void Circuit::move_branch(int i1, int i2, int i3, bool reverse) {
 
 string Circuit::to_s() const {
   stringstream buf;
-  buf << "# Circuit associé à la remorque " << this->remorque->name
+  buf << "# Circuit associ� � la remorque " << this->remorque->name
       << " de capa " << this->remorque->capa << endl;
   buf << "#       id, charge_init, desequ, longueur\n";
   buf << "circuit " << this->remorque->name << "        " << this->charge_init
       << "        " << this->desequilibre << "       " << this->length << endl;
   for (const auto &station : stations) {
-    // TODO : À AJOUTER CECI DANS MA FAQ (rubrique : "problèmes avec const"!
+    // TODO : � AJOUTER CECI DANS MA FAQ (rubrique : "probl�mes avec const"!
     // ATTENTION : on doit utiliser depots.at() au lieu de depots[]
-    //             car le résultat de this->depots[] n'est pas const !
+    //             car le r�sultat de this->depots[] n'est pas const !
     // ATTENTION : this-> depots[station] est interdit ici
-    //             car to_s() declarée const !!
+    //             car to_s() declar�e const !!
     // buf << "  " << station->name << " " << this->depots[station] << endl;
     buf << "  " << station->name << " " << this->depots.at(station) << endl;
   }
@@ -592,10 +632,10 @@ string Circuit::to_s_lite() const {
   return buf.str();
 }
 
-// Affichage détaillé d'une solution (format non standard mais plus détaillé) !
+// Affichage d�taill� d'une solution (format non standard mais plus d�taill�) !
 string Circuit::to_s_long() const {
   stringstream buf;
-  buf << "# Circuit détaillé associé à la remorque " << this->remorque->name;
+  buf << "# Circuit d�taill� associ� � la remorque " << this->remorque->name;
   buf << " de capa " << this->remorque->capa << endl;
   buf << "#   charge_init=" << this->charge_init << endl;
   buf << "#   desequilibre=" << this->desequilibre << endl;
@@ -604,7 +644,7 @@ string Circuit::to_s_long() const {
   Place *src = this->remorque;
   for (const auto &dst : stations) {
     const Arc *arc = this->inst->get_arc(src, dst);
-    // this-> depots[arc.dst.id] interdit ici car to_s_long() declarée const !!
+    // this-> depots[arc.dst.id] interdit ici car to_s_long() declar�e const !!
     // int depot = this->depots.at(static_cast<Station*>(arc->dst));
     int depot = this->depots.at((Station *)(arc->dst));
     int charge = this->charges.at((Station *)(arc->dst));
@@ -617,7 +657,7 @@ string Circuit::to_s_long() const {
   }
   return buf.str();
 }
-// Génére une erreur spécifique au circuit, et stoppe le programmme
+// G�n�re une erreur sp�cifique au circuit, et stoppe le programmme
 void Circuit::raise(string str) {
   stringstream buf;
   buf << str << endl;
