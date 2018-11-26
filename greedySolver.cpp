@@ -13,8 +13,11 @@ GreedySolver::~GreedySolver() {
 // Méthode principale de ce solver, principe :
 //
 bool GreedySolver::solve() {
+  logn1("\n---GreedySolver::solve START instance\n");
+
   Solution* sol = new Solution(inst);
 
+  logn4("\nGreedySolver::solve tri des stations\n");
   // liste triée par déséquilibre des stations
   map<int, Station*> stations_triees;
   for(int i = 0; i < inst->stations.size(); i++){
@@ -37,6 +40,7 @@ bool GreedySolver::solve() {
    * aux camions qui conviennent le mieux
    */
 
+  logn4("\nGreedySolver::solve boucle sur les stations pour affecter aux circuits\n");
   for(int i = 0; i < stations_triees.size(); i++) {
     // on boucle sur les camions pour trouver celui au circuit le plus adapté
     Station* tmp_station = stations_triees[i];
@@ -47,6 +51,7 @@ bool GreedySolver::solve() {
     candidat.first = -1;
     candidat.second = -1;
     bool candidate_found = false;
+
     for(int j = 0; j < inst->remorques.size(); j++) {
       Circuit* tmp_circuit = sol->circuits[j];
       int charge_max = tmp_circuit->remorque->capa;
@@ -61,13 +66,16 @@ bool GreedySolver::solve() {
                 " à la remorque " + tmp_circuit->remorque->name);
 
           tmp_circuit->stations.push_back(tmp_station);
-          tmp_circuit->update(); // TODO verifier que ça va bien ici !
+          //tmp_circuit->update(); // TODO verifier que ça va bien ici !
           candidate_found = true;
           break;
 
         } // sinon, on le met comme candidat s'il est meilleur que le précédent
         else {
-          if(diff - charge_max + charge_actuelle < candidat.second) {
+          log9("\nGreedySolver::solve candidat pour surplus à considérer\n");
+          cout << "CANDIDAT CONSIDERE POUR STATION " << tmp_station->name << " = " << j << endl;
+          if(diff - charge_max + charge_actuelle < candidat.second || candidat.first == -1) {
+            log9("\nGreedySolver::solve le candidat est remplacé\n");
             candidat.first = j;
             candidat.second = diff - charge_max + charge_actuelle;
           }
@@ -77,7 +85,7 @@ bool GreedySolver::solve() {
         // le camion peut donner les vélos : il est choisi !
         if(charge_actuelle > abs(diff)) {
           tmp_circuit->stations.push_back(tmp_station);
-          tmp_circuit->update(); // TODO : vérifier que ça va bien ici
+          //tmp_circuit->update(); // TODO : vérifier que ça va bien ici
           candidate_found = true;
 
           logn5("GreedySolver::solve: ajout de la station " + tmp_station->name +
@@ -87,14 +95,19 @@ bool GreedySolver::solve() {
         } // sinon, on l'ajoute en candidat
         else {
           // notre camion a plus à donner que le candidat actuel
-          if(candidat.second < charge_actuelle) {
+          log9("\nGreedySolver::solve candidat pour déficit à considérer\n");
+          if(candidat.second < charge_actuelle || candidat.first == -1) {
+            log9("\nGreedySolver::solve le candidat est remplacé\n");
             candidat.first = j;
             candidat.second = charge_actuelle;
           }
         }
       }
-
+      logn5("\n");
     }
+
+    logn5("GreedySolver::solve sortie de boucle des stations\n");
+    cout << "GreedySolver::solve candidat trouvé : " << candidate_found << endl;
 
     /*
      *  si on a pas trouvé de candidat fonctionnant dirctement, on ajoute
@@ -102,9 +115,11 @@ bool GreedySolver::solve() {
      */
 
     if(!candidate_found) {
+
       logn5("GreedySolver::solve: ajout de la station par défaut " + tmp_station->name +
             " à la remorque " + sol->circuits[candidat.first]->remorque->name);
       sol->circuits[candidat.first]->stations.push_back(tmp_station);
+      //sol->circuits[candidat.first]->update();
     }
   }
 

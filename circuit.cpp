@@ -77,7 +77,7 @@ void Circuit::update() {
   // U::die("Circuit::update : non implant�e");
   this->partial_clear();
   logn6("Circuit::update: equilibage pour " + U::to_s(*remorque));
-  this->equilibrate_eleve();
+  this->equilibrate();
 
   // Mise � jour distance parcourue totale et d�s�quilibre global
   logn6("Circuit::update: mise � jour des distances du circuit " +
@@ -117,8 +117,8 @@ void Circuit::equilibrate_dummy() {
 }
 
 void Circuit::equilibrate() {
-  this->equilibrate_dummy();
-  // this->equilibrate_eleve();
+  //this->equilibrate_dummy();
+  this->equilibrate_eleve();
 }
 
 void Circuit::equilibrate_eleve() {
@@ -132,43 +132,53 @@ void Circuit::equilibrate_eleve() {
   for(const auto &station : this->stations){
     int diff = station->nbvp - station->ideal;
 
-    // stop � la premi�re station en d�ficit
-    if(diff < 0)
+    // stop à la première station en surplus
+    if(diff > 0)
       break;
 
-    // on ajoute le nombre de v�los � ajouter � la station dans le camion
-    charge_depart += diff;
+    // on ajoute le nombre de vélos à ajouter à la station dans le camion
+    charge_depart += abs(diff);
     i0++;
   }
 
-  // si la charge max est d�pass�e, on la reset.
+
+
+  // si la charge max est dépassée, on la reset.
   if(charge_depart > charge_max)
     charge_depart = charge_max;
 
   this->charge_init = charge_depart;
 
-  // on proc�de alors � l'�quilibrage des stations
+
+  // on procéde alors à l'équilibrage des stations
   int charge_actuelle = charge_depart;
+
   for(const auto &station : this->stations) {
     int diff = station->nbvp - station->ideal;
 
     // station en surplus
     if(diff >= 0) {
+
       int charge_supplementaire = min(diff, charge_max - charge_actuelle);
       charge_actuelle += charge_supplementaire;
 
       station->nbvp -= charge_supplementaire;
+      this->depots[station] = 0;
     } else {
       int charge_deposee = min(abs(diff), charge_actuelle);
       charge_actuelle -= charge_deposee;
       station->nbvp += charge_deposee;
+      this->depots[station] = charge_deposee;
     }
 
     this->charges[station] = charge_actuelle;
     this->desequilibre += abs(station->deficit());
+
+    // Affichage
+    //cout << "station : " << station -> name << " | diff : " << diff << " | dépot : " << this->depots[station] << " | charge : " << charge_actuelle << endl; 
   }
 
-  // logn6("Circuit::equilibrate END");
+  logn6("Circuit::equilibrate_eleve END");
 }
 
 // Insertion d'une station dans un circuit � la position indiqu�e.
@@ -646,11 +656,13 @@ string Circuit::to_s_long() const {
     const Arc *arc = this->inst->get_arc(src, dst);
     // this-> depots[arc.dst.id] interdit ici car to_s_long() declar�e const !!
     // int depot = this->depots.at(static_cast<Station*>(arc->dst));
+
     int depot = this->depots.at((Station *)(arc->dst));
     int charge = this->charges.at((Station *)(arc->dst));
     buf << "   " << arc->to_s_long() << " depot de " << depot
         << " => charge = " << charge << endl;
     src = dst;
+
   }
   if (stations.size() != 0) {
     buf << "   " << inst->get_arc(stations.back(), this->remorque)->to_s_long();
