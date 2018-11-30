@@ -115,18 +115,29 @@ void DescentSolver::mutate(Solution *sol) {
   // consécutifs pour élargir le voisinage
 
   // Choix d'un numéro de circuit source (i.e. remorque) aléatoire
-  // Circuit* c1 = sol->circuits[ rand() % sol->circuits.size() ];
+  cout << "selection of the circits" << endl;
+  Circuit* c1 = sol->circuits[ rand() % sol->circuits.size() ];
 
   // Choix d'un numéro de circuit destination (i.e. remorque) aléatoire
-  // Circuit* c2 = sol->circuits[ rand() % sol->circuits.size() ];
+  Circuit* c2 = sol->circuits[ rand() % sol->circuits.size() ];
 
   // et on en fait quoi de c1 et c2 ?
-  // ...
+  // sélection d'une station aléatoire sur c1, que l'on transfère vers c2
 
+  cout << "moving the station from c1 to c2" << endl;
 
+  Station* moving_station = c1->erase(rand() % c1->stations.size());
+  c2->insert_best(moving_station);
+
+  cout << "stations changed, fonction mutate intra" << endl;
+
+  // TODO : vérifier que ça sert à qqch ?
   Mutator::mutate_intra_circuit_move_station(sol);
 
+  cout << "updating the solution" << endl;
   sol->update();
+
+  cout << "solution updated" << endl;
   logn4("DescentSolver::mutate END");
 };
 
