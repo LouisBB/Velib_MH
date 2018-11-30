@@ -123,11 +123,14 @@ void Circuit::equilibrate() {
 
 void Circuit::equilibrate_eleve() {
   logn6("Circuit::equilibrate full BEGIN");
-  int charge_min = 0;
   int charge_max = this->remorque->capa;
+  this->desequilibre = 0;
 
+  /*
+   * dummy procedure to find the initial stock
+   */
   // on cherche le premier entrepot en d�ficit
-  int i0 = 0;
+/*  int i0 = 0;
   int charge_depart = 0;
   for(const auto &station : this->stations){
     int diff = station->nbvp - station->ideal;
@@ -140,8 +143,31 @@ void Circuit::equilibrate_eleve() {
     charge_depart += abs(diff);
     i0++;
   }
+*/
+  /*
+   * initial stock
+   */
+  int min_number = 0;
+  int max_number = 0;
+  int diff_cum = 0;
 
+  for(const auto &station : this->stations) {
+      diff_cum += station->ideal - station->nbvp;
+      min_number = diff_cum > min_number ? min(diff_cum, charge_max) : min_number;
+      max_number = diff_cum < max_number ? max(diff_cum, -charge_max) : max_number;
 
+      if(min_number + abs(max_number) > charge_max) {
+        if(station->ideal - station->nbvp > 0)
+          min_number = max_number;
+        else
+          max_number = min_number;
+
+        break;
+      }
+  }
+  max_number = charge_max + max_number;
+
+  int charge_depart = min_number;
 
   // si la charge max est dépassée, on la reset.
   if(charge_depart > charge_max)
@@ -155,27 +181,23 @@ void Circuit::equilibrate_eleve() {
 
   for(const auto &station : this->stations) {
     int diff = station->nbvp - station->ideal;
-
     // station en surplus
     if(diff >= 0) {
 
       int charge_supplementaire = min(diff, charge_max - charge_actuelle);
       charge_actuelle += charge_supplementaire;
 
-      station->nbvp -= charge_supplementaire;
-      this->depots[station] = 0;
+      this->depots[station] -= charge_supplementaire;
+      this->desequilibre += abs(diff - charge_supplementaire);
     } else {
       int charge_deposee = min(abs(diff), charge_actuelle);
       charge_actuelle -= charge_deposee;
-      station->nbvp += charge_deposee;
       this->depots[station] = charge_deposee;
+      this->desequilibre += abs(diff + charge_deposee);
     }
 
     this->charges[station] = charge_actuelle;
-    this->desequilibre += abs(station->deficit());
 
-    // Affichage
-    //cout << "station : " << station -> name << " | diff : " << diff << " | dépot : " << this->depots[station] << " | charge : " << charge_actuelle << endl; 
   }
 
   logn6("Circuit::equilibrate_eleve END");

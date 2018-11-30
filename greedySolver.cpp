@@ -24,7 +24,8 @@ bool GreedySolver::solve() {
     stations_triees[i] = inst->stations[i];
   }
 
-  // tri de la liste (tri à bulles)
+  // tri de la liste (tri à bulles
+	/*)
   for(int i = 0; i < stations_triees.size()-1; i++) {
     for(int j = i; j < stations_triees.size()-1; j++) {
       if(stations_triees[j]->deficit() <= stations_triees[j+1]->deficit()) {
@@ -34,7 +35,7 @@ bool GreedySolver::solve() {
       }
     }
   }
-
+*/
   /*
    * tant que la liste est non-vide, on ajoute les stations une à une
    * aux camions qui conviennent le mieux
