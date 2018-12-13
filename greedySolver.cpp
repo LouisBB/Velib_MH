@@ -19,112 +19,83 @@ bool GreedySolver::solve() {
 
   logn4("\nGreedySolver::solve tri des stations\n");
   // liste triée par déséquilibre des stations
-  map<int, Station*> stations_triees;
+  vector<Station*> stations_triees;
   for(int i = 0; i < inst->stations.size(); i++){
-    stations_triees[i] = inst->stations[i];
+    stations_triees.push_back(inst->stations[i]);
   }
 
-  // tri de la liste (tri à bulles
-	/*)
+  // tri de la liste (tri à bulles)
   for(int i = 0; i < stations_triees.size()-1; i++) {
     for(int j = i; j < stations_triees.size()-1; j++) {
-      if(stations_triees[j]->deficit() <= stations_triees[j+1]->deficit()) {
+      if(stations_triees[j]->deficit() >= stations_triees[j+1]->deficit()) {
         Station* tmp_station = stations_triees[j];
         stations_triees[j]   = stations_triees[j+1];
         stations_triees[j+1] = tmp_station;
       }
     }
   }
-*/
-  /*
-   * tant que la liste est non-vide, on ajoute les stations une à une
-   * aux camions qui conviennent le mieux
-   */
+	
+	while(!stations_triees.empty()) {	
+		cout << "1" << endl;
+		cout << "nomber of stations " <<  stations_triees.size() << endl;
+		tuple<Station*, Circuit*, int> best_couple;
 
-  logn4("\nGreedySolver::solve boucle sur les stations pour affecter aux circuits\n");
-  for(int i = 0; i < stations_triees.size(); i++) {
-    // on boucle sur les camions pour trouver celui au circuit le plus adapté
-    Station* tmp_station = stations_triees[i];
-    int diff = tmp_station->deficit();
+		unsigned int old_score = -1;
+		unsigned int new_score = old_score;
 
-    // boucle sur les remorques
-    pair<int, int> candidat; // <id du circuit ; manque du camion>
-    candidat.first = -1;
-    candidat.second = -1;
-    bool candidate_found = false;
+		int MAX_SAMPLE = 2;
+		if(stations_triees.size() < MAX_SAMPLE) {
+			MAX_SAMPLE = stations_triees.size();
+		}
 
-    for(int j = 0; j < inst->remorques.size(); j++) {
-      Circuit* tmp_circuit = sol->circuits[j];
-      int charge_max = tmp_circuit->remorque->capa;
-      Station* latest_station = tmp_circuit->stations[tmp_circuit->stations.size()-1];
-      int charge_actuelle = tmp_circuit->charges[latest_station];
+		cout << "2" << endl;
+		for(int i = 0; i < MAX_SAMPLE; i++) {
+		cout << "3" << endl;
+			for(int j = 0; j < inst->remorques.size(); j++) {
+				
+				// compute the new score
+				// TODO
 
-      // surplus de vélos dans la station
-      if(diff >= 0) {
-          // le camion peut fournir les vélos, il est choisi !
-        if(charge_max - charge_actuelle < diff) {
-          logn5("GreedySolver::solve: ajout de la station " + tmp_station->name +
-                " à la remorque " + tmp_circuit->remorque->name);
+				int positions = sol->circuits[j]->stations.size();
 
-          tmp_circuit->stations.push_back(tmp_station);
-          //tmp_circuit->update(); // TODO verifier que ça va bien ici !
-          candidate_found = true;
-          break;
+		cout << "4" << endl;
+				for(int k = 0; k <= positions; k++) {
+					
+					Solution* new_sol = new Solution(inst);
+					new_sol->copy(sol);
 
-        } // sinon, on le met comme candidat s'il est meilleur que le précédent
-        else {
-          log9("\nGreedySolver::solve candidat pour surplus à considérer\n");
-          cout << "CANDIDAT CONSIDERE POUR STATION " << tmp_station->name << " = " << j << endl;
-          if(diff - charge_max + charge_actuelle < candidat.second || candidat.first == -1) {
-            log9("\nGreedySolver::solve le candidat est remplacé\n");
-            candidat.first = j;
-            candidat.second = diff - charge_max + charge_actuelle;
-          }
-        }
-      } // déficit de vélos dans la stations
-      else {
-        // le camion peut donner les vélos : il est choisi !
-        if(charge_actuelle > abs(diff)) {
-          tmp_circuit->stations.push_back(tmp_station);
-          //tmp_circuit->update(); // TODO : vérifier que ça va bien ici
-          candidate_found = true;
 
-          logn5("GreedySolver::solve: ajout de la station " + tmp_station->name +
-                " à la remorque " + tmp_circuit->remorque->name);
+					new_sol->circuits[j]->insert(stations_triees[i], k);
 
-          break;
-        } // sinon, on l'ajoute en candidat
-        else {
-          // notre camion a plus à donner que le candidat actuel
-          log9("\nGreedySolver::solve candidat pour déficit à considérer\n");
-          if(candidat.second < charge_actuelle || candidat.first == -1) {
-            log9("\nGreedySolver::solve le candidat est remplacé\n");
-            candidat.first = j;
-            candidat.second = charge_actuelle;
-          }
-        }
-      }
-      logn5("\n");
-    }
+					new_sol->update();
+//					new_score = new_sol->get_cost();
+					new_score = new_sol->desequilibre;
+					if(new_score < old_score) { 
+					 best_couple = make_tuple(stations_triees[i], sol->circuits[j], k);
+					 	old_score = new_score;
+					}
 
-    logn5("GreedySolver::solve sortie de boucle des stations\n");
-    cout << "GreedySolver::solve candidat trouvé : " << candidate_found << endl;
+					delete new_sol;
+				}
 
-    /*
-     *  si on a pas trouvé de candidat fonctionnant dirctement, on ajoute
-     * la station au candidat qui convient "le mieux"
-     */
+							
+			}
+		}
 
-    if(!candidate_found) {
+		cout << "5" << endl;
+		Station* assigned_station = get<0>(best_couple);
+		Circuit* selected_circuit = get<1>(best_couple);
+		int insert_pos = get<2>(best_couple);
+		selected_circuit->insert(assigned_station, insert_pos);
+	 
+		sol->update();
 
-      logn5("GreedySolver::solve: ajout de la station par défaut " + tmp_station->name +
-            " à la remorque " + sol->circuits[candidat.first]->remorque->name);
-      sol->circuits[candidat.first]->stations.push_back(tmp_station);
-      //sol->circuits[candidat.first]->update();
-    }
-  }
+		// removing the selected station from the list
+		auto it = std::find(stations_triees.begin(), stations_triees.end(),	assigned_station);
+		if (it != stations_triees.end()) 
+			stations_triees.erase(it); 
 
-  sol->update();
+	}
 
   this->found = true;
   this->solution = sol;
