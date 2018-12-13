@@ -56,17 +56,12 @@ void Circuit::copy(const Circuit *other) {
 // Supprime les informations d'�quilibrage de ce circuit
 // (ne modifie pas le vecteur de stations !)
 void Circuit::partial_clear() {
-  cout << "partial_clear BEGIN" << endl;
   this->charge_init = 0;
   this->desequilibre = 0;
   this->length = 0;
-  cout << "test ." << endl;
-  cout << this->depots.size() << endl;
   this->depots.clear();
-  cout << "first clear done" << endl;
   // this->depots->resize(this->stations->size(), 0); // ssi vector
   this->charges.clear();
-  cout << "second clear done" << endl;
   // this->charges->resize(this->stations->size(), 0); // ssi vector
 }
 
@@ -78,12 +73,9 @@ void Circuit::clear() {
 
 // Recalcule l'�quilibrage et met � jour les attributs d�riv�s
 void Circuit::update() {
-  cout << "update ??" << endl;
 //  logn5("Circuit::update BEGIN");
   // U::die("Circuit::update : non implant�e");
-  cout << "partial_clear()" << endl;
   this->partial_clear();
-  cout << "equilibrate() " << endl;
   logn6("Circuit::update: equilibage pour " + U::to_s(*remorque));
   this->equilibrate();
 
@@ -130,7 +122,7 @@ void Circuit::equilibrate() {
 }
 
 void Circuit::equilibrate_eleve() {
-  cout << "debut de l'équilibrage élève" << endl;
+//  cout << "debut de l'équilibrage élève" << endl;
   logn6("Circuit::equilibrate full BEGIN");
   int charge_max = this->remorque->capa;
   this->desequilibre = 0;
@@ -274,7 +266,6 @@ void Circuit::insert_rand(Station *station) {
 // d'�quilibrage est faite), mais pas n�cessairement efficace !
 //
 void Circuit::insert_best(Station *station) {
-  cout << "INSERT_BEST " << endl << endl;
   // Log::level += 0; // on peut modifier le level juste pour cette m�thode...
   string pref = "Circuit::insert_best (" + this->remorque->name + ") ";
   logn5(pref + "BEGIN " + " stations.size: " + U::to_s(this->stations.size()) +
@@ -285,23 +276,20 @@ void Circuit::insert_best(Station *station) {
 
   int pos = 0;
   if (this->stations.size() == 0) {
-    cout << "CIRCUIT VIDE" << endl;
     // circuit vide. Pas besoin de faire de pr�-insertion pour trouver la
     // meilleure position : il suffit d'ins�rer la nouvelle station � la fin
     this->stations.insert(this->stations.end(),
                           station);  // equivalent � push_bak(...)
     this->update();
   } else {
-    cout << "cCIRCUIT NON VIDE" << endl;
     auto it = this->stations.begin();
     // On va tester n+1 positions d'insertion (y compris apr�s la derni�re)
     while (it != this->stations.end()) {
-      cout << " test des positions d'insersion" << endl;
+
       auto it2 = this->stations.insert(it, station);
-      cout << "station insérée avec succès ! " << endl;
+
       // On doit mettre � jour ce circuit avant d'en extraire le co�t !
       this->update();
-      cout << "update successful" << endl;
       int cost = this->get_cost();
       if (cost < best_cost) {
         best_cost = cost;
@@ -310,15 +298,13 @@ void Circuit::insert_best(Station *station) {
       } else {
       }
       // On remet le circuit en �tat avant de passer � station suivante
-      cout << "remise en etat" << endl;
       this->stations.erase(it2);
+
       it++;  // valable m�me si it==end()
       pos++;
     }
     // On proc�de effectivement � la meilleure insertion
-    cout << "insertion effective de la meilleure solution" << endl;
     this->stations.insert(best_it, station);
-    cout << "meilleurs solution insérée" << endl;
     this->update();
   }
   if (log6()) {
@@ -342,7 +328,6 @@ void Circuit::insert_from_option(Station *station) {
     this->insert_rand(station);
   } else {
     if (sinserter == "NONE") {
-      cout << "La valeur par d�faut NONE doit �tre modif�e par le solveur.\n";
     }
     U::die("station_inserter inconnu : " + U::to_s(sinserter));
   }
@@ -441,8 +426,7 @@ void Circuit::move_to(int i1, Circuit *other, int i2) {
 //
 void Circuit::move_best_to(int i1, Circuit *other) {
   if (log5()) {
-    cout << "Circuit::move_best_to BEGIN "
-         << " i1=" + this->remorque->name + "/" << i1 << endl;
+         cout << " i1=" + this->remorque->name + "/" << i1 << endl;
   }
   if (i1 < 0 || i1 > this->stations.size() - 1) {
     raise("ERREUR Circuit::move_best_to : i1 hors borne : " + U::to_s(i1));

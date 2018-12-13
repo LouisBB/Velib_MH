@@ -132,12 +132,17 @@ void DescentSolver::mutate(Solution *sol) {
   //cout << "stations changed, fonction mutate intra" << endl;
 
   // fonctions de modification de circuits déjà implémentées
+	Mutator::mutate_intra_circuit_2opt(sol);
+
   Mutator::mutate_intra_circuit_move_station(sol);
 
-  cout << "updating the solution" << endl;
+  Mutator::mutate_inter_circuit_move_station(sol);
+
+  Mutator::mutate_inter_circuit_move_branch(sol);
+
+
   sol->update();
 
-  cout << "solution updated" << endl;
   logn4("DescentSolver::mutate END");
 };
 
