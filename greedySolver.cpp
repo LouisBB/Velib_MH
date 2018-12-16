@@ -34,8 +34,8 @@ bool GreedySolver::solve() {
       }
     }
   }
-	
-	while(!stations_triees.empty()) {	
+
+	while(!stations_triees.empty()) {
 		cout << "1" << endl;
 		cout << "nomber of stations " <<  stations_triees.size() << endl;
 		tuple<Station*, Circuit*, int> best_couple;
@@ -52,7 +52,7 @@ bool GreedySolver::solve() {
 		for(int i = 0; i < MAX_SAMPLE; i++) {
 		cout << "3" << endl;
 			for(int j = 0; j < inst->remorques.size(); j++) {
-				
+
 				// compute the new score
 				// TODO
 
@@ -60,7 +60,7 @@ bool GreedySolver::solve() {
 
 		cout << "4" << endl;
 				for(int k = 0; k <= positions; k++) {
-					
+
 					Solution* new_sol = new Solution(inst);
 					new_sol->copy(sol);
 
@@ -70,7 +70,7 @@ bool GreedySolver::solve() {
 					new_sol->update();
 //					new_score = new_sol->get_cost();
 					new_score = new_sol->desequilibre;
-					if(new_score < old_score) { 
+					if(new_score < old_score) {
 					 best_couple = make_tuple(stations_triees[i], sol->circuits[j], k);
 					 	old_score = new_score;
 					}
@@ -78,7 +78,7 @@ bool GreedySolver::solve() {
 					delete new_sol;
 				}
 
-							
+
 			}
 		}
 
@@ -87,20 +87,20 @@ bool GreedySolver::solve() {
 		Circuit* selected_circuit = get<1>(best_couple);
 		int insert_pos = get<2>(best_couple);
 		selected_circuit->insert(assigned_station, insert_pos);
-	 
+
 		sol->update();
 
 		// removing the selected station from the list
 		auto it = std::find(stations_triees.begin(), stations_triees.end(),	assigned_station);
-		if (it != stations_triees.end()) 
-			stations_triees.erase(it); 
+		if (it != stations_triees.end())
+			stations_triees.erase(it);
 
 	}
 
   this->found = true;
   this->solution = sol;
   logn3("GreedySolver::solve: END");
-  return found;
+  return this->found;
 }
 
 //./
