@@ -54,7 +54,7 @@ class GreedySolver : public Solver {
 public:
   GreedySolver(const Instance *Instance);
   virtual ~GreedySolver();
-  virtual bool solve();
+  virtual bool solve(bool randomized = false);
   Solution *solution;
   virtual Solution *get_solution() const { return this->solution; };
 };

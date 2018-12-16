@@ -97,6 +97,21 @@ void greedy_solver_action(Options *args) {
   logn1("greedy_solver_action END");
 }
 
+void random_greedy_solver_action(Options *args) {
+  logn1("random_greedy_solver_action BEGIN");
+  Instance *inst = new Instance(args->filename);
+  GreedySolver *solver = new GreedySolver(inst);
+  solver->solve(true);
+  if (solver->found) {
+    Solution::save(solver->get_solution(), args);
+  } else {
+    cout << "Solver : pas de solution " << endl;
+  }
+  delete solver;
+  delete inst;
+  logn1("random_greedy_solver_action END");
+}
+
 void grasp_solver_action(Options *args) {
   logn1("grasp_solver_action BEGIN");
   Instance *inst = new Instance(args->filename);
@@ -192,6 +207,8 @@ int main(int argc, char *argv[]) {
     carlo_solver_action(args);
   } else if (args->action == "greedy") {
     greedy_solver_action(args);
+  } else if (args->action == "random_greedy") {
+    random_greedy_solver_action(args);
   } else if (args->action == "grasp") {
     grasp_solver_action(args);
   } else if (args->action == "explore") {

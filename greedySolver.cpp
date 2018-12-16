@@ -12,8 +12,12 @@ GreedySolver::~GreedySolver() {
 }
 // Méthode principale de ce solver, principe :
 //
-bool GreedySolver::solve() {
+bool GreedySolver::solve(bool randomized) {
   logn1("\n---GreedySolver::solve START instance\n");
+
+  if(randomized) {
+    logn1("\n --- RANDOM Greedy solver\n");
+  }
 
   Solution* sol = new Solution(inst);
 
@@ -38,27 +42,29 @@ bool GreedySolver::solve() {
 	while(!stations_triees.empty()) {
 		cout << "1" << endl;
 		cout << "nomber of stations " <<  stations_triees.size() << endl;
-		tuple<Station*, Circuit*, int> best_couple;
+		tuple<Station*, Circuit*, int, int> best_couple;
 
 		unsigned int old_score = -1;
 		unsigned int new_score = old_score;
 
-		int MAX_SAMPLE = 2;
+    logn1("-- Max number of stations to sample in the greedy solver to optionize");
+		int MAX_SAMPLE = 10;
 		if(stations_triees.size() < MAX_SAMPLE) {
 			MAX_SAMPLE = stations_triees.size();
 		}
+    logn1("-- Max number of candidates for random greedy to optionize");
+    int N_CANDID = randomized ? 5 : 1;
+    // we store the five best candidates
+    vector<tuple<Station*, Circuit*, int, int> > candidates;
 
-		cout << "2" << endl;
+    // looping over the stations
 		for(int i = 0; i < MAX_SAMPLE; i++) {
-		cout << "3" << endl;
+
+      // looping over the circuits
 			for(int j = 0; j < inst->remorques.size(); j++) {
 
-				// compute the new score
-				// TODO
 
 				int positions = sol->circuits[j]->stations.size();
-
-		cout << "4" << endl;
 				for(int k = 0; k <= positions; k++) {
 
 					Solution* new_sol = new Solution(inst);
@@ -68,21 +74,36 @@ bool GreedySolver::solve() {
 					new_sol->circuits[j]->insert(stations_triees[i], k);
 
 					new_sol->update();
-//					new_score = new_sol->get_cost();
-					new_score = new_sol->desequilibre;
-					if(new_score < old_score) {
-					 best_couple = make_tuple(stations_triees[i], sol->circuits[j], k);
-					 	old_score = new_score;
-					}
+					new_score = new_sol->get_cost();
+
+          // no need for all the comparisons if we don't have enough candidates
+          if(candidates.size() >= N_CANDID) {
+            // best score among the candidates
+            int highest_index = 0;
+            unsigned int highest_score = get<3>(candidates[highest_index]);
+            for(int l = 1; l < candidates.size(); l++) {
+              if(get<3>(candidates[l]) > highest_score) {
+                highest_index = l;
+                highest_score = get<3>(candidates[highest_index]);
+              }
+            }
+
+            // we replace the lowest ranking
+            if(new_score < highest_score) 
+              candidates[highest_index] = make_tuple(stations_triees[i], sol->circuits[j], k, new_score);
+
+
+          } else {
+            candidates.push_back(make_tuple(stations_triees[i], sol->circuits[j], k, new_score));
+          }
 
 					delete new_sol;
 				}
-
-
 			}
 		}
 
-		cout << "5" << endl;
+    best_couple = candidates[rand() % N_CANDID];
+
 		Station* assigned_station = get<0>(best_couple);
 		Circuit* selected_circuit = get<1>(best_couple);
 		int insert_pos = get<2>(best_couple);
