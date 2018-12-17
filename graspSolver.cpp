@@ -19,7 +19,7 @@ bool GraspSolver::solve() {
 
   // we make it go through the greedy algorithm first
   GreedySolver* greedy_solver = new GreedySolver(inst);
-  greedy_solver->solve();
+  greedy_solver->solve(true); // the argument true enables randomization
   if(!greedy_solver->found) {
     logn1("\n   greedy solver didn't find a solution \n");
     delete greedy_solver;
@@ -35,19 +35,34 @@ bool GraspSolver::solve() {
   // now we have an updated solution, let's have it go through the descent Solver
   DescentSolver* descent_solver = new DescentSolver(inst);
 
-  logn1("TODO :? use argument instead of hard-coded number of iterations (100)");
-  cout << endl << Options::args->itermax << endl;
-  descent_solver->solve(tmp_sol, Options::args->itermax);
+  logn1("TODO : use argument instead of hard-coded number of descents (5)");
 
-  logn1("Descent solver completed\n");
+  Solution* descent_sol = new Solution(inst);
 
-  if(!descent_solver->found) {
-    found = false;
-    return false;
+  // we operate several descents
+  for(int i = 0; i < 5; i++) {
+    cout  << endl << i << "th iteration of the descent solver" << endl;
+    // we copy the best solution and run the descent solver
+    descent_sol->copy(tmp_sol);
+    descent_solver->solve(descent_sol, Options::args->itermax);
+
+    logn1("\nDescent solver completed\n");
+    cout << "Cost : " << descent_sol->get_cost() << endl;
+    logn1("TODO: investigate in case the descent returns false");
+    /*
+    if(!descent_solver->found) {
+      found = false;
+      return false;
+    }
+    */
+
+    // we update the solution if this one is better
+    if(descent_sol->get_cost() <= tmp_sol->get_cost())
+      tmp_sol->copy(descent_sol);
   }
-
   found = true;
 
+  delete descent_sol;
   delete descent_solver;
 
   this->solution->copy(tmp_sol);
