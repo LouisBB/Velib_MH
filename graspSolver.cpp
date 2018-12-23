@@ -15,11 +15,15 @@ GraspSolver::~GraspSolver() {
 bool GraspSolver::solve() {
   found = false;
   logn1("\n---Grasp solver strating ---\n");
-  Solution* tmp_sol = new Solution(inst);
+  Solution* best_sol = new Solution(inst);
 
+  for(int i = 0; i < 5; i++) {
   // we make it go through the greedy algorithm first
+  
+  //
   GreedySolver* greedy_solver = new GreedySolver(inst);
   greedy_solver->solve(true); // the argument true enables randomization
+
   if(!greedy_solver->found) {
     logn1("\n   greedy solver didn't find a solution \n");
     delete greedy_solver;
@@ -34,24 +38,18 @@ bool GraspSolver::solve() {
 
   // now we have an updated solution, let's have it go through the descent Solver
   DescentSolver* descent_solver = new DescentSolver(inst);
-
-  logn1("\nTODO : use argument instead of hard-coded number of descents (5)\n");
-
   Solution* descent_sol = new Solution(inst);
 
-  // we operate several descents
-  for(int i = 0; i < 5; i++) {
-    if(logn3)
-      cout  << endl << i << "th iteration of the descent solver" << endl;
-    // we copy the best solution and run the descent solver
-    descent_sol->copy(tmp_sol);
-    descent_solver->solve(descent_sol, Options::args->itermax);
+  // we operate the descent
+  // we copy the best solution and run the descent solver
+  descent_sol->copy(tmp_sol);
+  descent_solver->solve(descent_sol, Options::args->itermax);
 
-    if(logn3()) {
-      logn1("\nDescent solver completed\n");
+  if(logn3()) {
+    logn1("\nDescent solver completed\n");
       cout << "Cost : " << descent_sol->get_cost() << endl;
-    }
-    logn1("\nTODO: investigate in case the descent returns false\n");
+  }
+  logn1("\nTODO: investigate in case the descent returns false\n");
     /*
     if(!descent_solver->found) {
       found = false;
@@ -60,17 +58,13 @@ bool GraspSolver::solve() {
     */
 
     // we update the solution if this one is better
-    if(descent_sol->get_cost() <= tmp_sol->get_cost())
-      tmp_sol->copy(descent_sol);
+  if(descent_sol->get_cost() <= best_sol->get_cost())
+    best_sol->copy(descent_sol);
   }
   found = true;
 
-  delete descent_sol;
-  delete descent_solver;
-
-  this->solution->copy(tmp_sol);
+  this->solution->copy(best_sol);
   delete tmp_sol;
-
   return found;
 }
 
