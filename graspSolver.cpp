@@ -21,6 +21,7 @@ bool GraspSolver::solve() {
   // we make it go through the greedy algorithm first
   
   //
+  Solution* tmp_sol = new Solution(inst);
   GreedySolver* greedy_solver = new GreedySolver(inst);
   greedy_solver->solve(true); // the argument true enables randomization
 
@@ -64,7 +65,6 @@ bool GraspSolver::solve() {
   found = true;
 
   this->solution->copy(best_sol);
-  delete tmp_sol;
   return found;
 }
 
