@@ -16,6 +16,7 @@ class Options {
 
   string action;
   long itermax;
+  long nb_start_grasp;
 
   string station_inserter;
   string station_chooser;
@@ -315,6 +316,11 @@ class Options {
     parser->add_long_option("--itermax", this->itermax)
         ->set_desc("Nombre maxi d'itérations (ou autre selon le solveur).")
         ->add_alias("-n");
+
+    //--------------
+    this->nb_start_grasp = -1;
+    parser->add_long_option("--nb_start_grasp", this->nb_start_grasp)
+        ->set_desc("Nombre de start pour le grasp");
 
     //--------------
     this->soldir = "./";

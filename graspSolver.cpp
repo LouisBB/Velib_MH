@@ -8,16 +8,16 @@ GraspSolver::GraspSolver(const Instance *inst) : Solver::Solver(inst) {
   logn1("GraspSolver END.");
 }
 GraspSolver::~GraspSolver() {
-  // TODO
 }
 // Méthode principale de ce solver, principe :
 //
 bool GraspSolver::solve() {
+  long nb_start = Options::args->nb_start_grasp;
   found = false;
   logn1("\n---Grasp solver strating ---\n");
   Solution* best_sol = new Solution(inst);
 
-  for(int i = 0; i < 5; i++) {
+  for(int i = 0; i < nb_start; i++) {
   // we make it go through the greedy algorithm first
   
   //
