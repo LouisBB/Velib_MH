@@ -40,8 +40,8 @@ bool GreedySolver::solve(bool randomized) {
   }
 
 	while(!stations_triees.empty()) {
-		cout << "1" << endl;
-		cout << "nomber of stations " <<  stations_triees.size() << endl;
+		logn2("-- Max number of stations to sample in the greedy solver to optionize")
+		cout << "number of stations " <<  stations_triees.size() << endl;
 		tuple<Station*, Circuit*, int, int> best_couple;
 
 		unsigned int old_score = -1;
