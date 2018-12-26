@@ -18,6 +18,7 @@ class Options {
   long itermax;
   long nb_start_grasp;
   long nb_candidates_greedy;
+  long nb_stations_greedy;
 
   string station_inserter;
   string station_chooser;
@@ -327,6 +328,11 @@ class Options {
     this->nb_candidates_greedy = 5;
     parser->add_long_option("--nb_candidates_greedy", this->nb_candidates_greedy)
         ->set_desc("Nombre de circuits candidats pour le random greedy solver");
+
+    //--------------
+    this->nb_stations_greedy = 10;
+    parser->add_long_option("--nb_stations_greedy", this->nb_stations_greedy)
+        ->set_desc("Nombre de stations candidates pour le greedy solver, random ou non");
 
     //--------------
     this->soldir = "./";

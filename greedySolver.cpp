@@ -48,11 +48,11 @@ bool GreedySolver::solve(bool randomized) {
 		unsigned int new_score = old_score;
 
     logn1("-- Max number of stations to sample in the greedy solver to optionize");
-		int MAX_SAMPLE = 10;
+		long MAX_SAMPLE = Options::args->nb_stations_greedy;
 		if(stations_triees.size() < MAX_SAMPLE) {
 			MAX_SAMPLE = stations_triees.size();
 		}
-    logn1("-- Max number of candidates for random greedy to optionize");
+
     long nb_candidates_greedy = Options::args->nb_candidates_greedy;
     int N_CANDID = randomized ? nb_candidates_greedy : 1;
     // we store the best candidates
