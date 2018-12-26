@@ -17,6 +17,7 @@ class Options {
   string action;
   long itermax;
   long nb_start_grasp;
+  long nb_candidates_greedy;
 
   string station_inserter;
   string station_chooser;
@@ -318,9 +319,14 @@ class Options {
         ->add_alias("-n");
 
     //--------------
-    this->nb_start_grasp = -1;
+    this->nb_start_grasp = 10;
     parser->add_long_option("--nb_start_grasp", this->nb_start_grasp)
         ->set_desc("Nombre de start pour le grasp");
+
+    //--------------
+    this->nb_candidates_greedy = 5;
+    parser->add_long_option("--nb_candidates_greedy", this->nb_candidates_greedy)
+        ->set_desc("Nombre de circuits candidats pour le random greedy solver");
 
     //--------------
     this->soldir = "./";
