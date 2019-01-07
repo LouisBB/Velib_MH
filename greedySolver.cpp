@@ -31,7 +31,7 @@ bool GreedySolver::solve(bool randomized) {
   // tri de la liste (tri à bulles)
   for(int i = 0; i < stations_triees.size()-1; i++) {
     for(int j = i; j < stations_triees.size()-1; j++) {
-      if(stations_triees[j]->deficit() >= stations_triees[j+1]->deficit()) {
+      if(abs(stations_triees[j]->deficit()) >= abs(stations_triees[j+1]->deficit())) {
         Station* tmp_station = stations_triees[j];
         stations_triees[j]   = stations_triees[j+1];
         stations_triees[j+1] = tmp_station;
