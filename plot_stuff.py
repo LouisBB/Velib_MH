@@ -176,7 +176,7 @@ def parse_solution(filepath):
                     
     return stats, circuits
 
-instance_name, remorques, stations = parse_file('../data/v2.dat')
-stats, circuits = parse_solution("../build/v2-2-581.sol")
+instance_name, remorques, stations = parse_file('../data/v1.dat')
+stats, circuits = parse_solution("../build/v1-1-486.sol")
 
 plot_input_from_df(stations, remorques, circuits)
