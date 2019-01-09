@@ -195,13 +195,14 @@ void DescentSolver::record_solution(Solution *sol, long iter) {
 //    (hot pour simuler une température infinie)
 void DescentSolver::reject_solution(Solution *sol) {
   if (!Options::args->hot) {
-    sol->copy(this->bestsol);  // on restaure bestsol dans sol
+    // Descente : on repart de bestsol
+    sol->copy(this->bestsol);
   } else {
-    // rien à faire
+    // Exploration : on continue avec sol ou testsol
+    // Donc rien à faire !
   }
   // log2("."); // afficherait "L2." or on veut seulement un "."
   if (log2()) {
     cout << "." << flush;
   }
 }
-//./
