@@ -159,14 +159,11 @@ void Circuit::equilibrate_eleve() {
 
       if(min_number + abs(max_number) > charge_max) {
         if(station->ideal - station->nbvp > 0)
-          min_number = max_number;
-        else
-          max_number = min_number;
+          min_number = abs(max_number);
 
         break;
       }
   }
-  max_number = charge_max + max_number;
 
   int charge_depart = min_number;
 
