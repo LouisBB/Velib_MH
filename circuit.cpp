@@ -157,7 +157,7 @@ void Circuit::equilibrate_eleve() {
       min_number = diff_cum > min_number ? min(diff_cum, charge_max) : min_number;
       max_number = diff_cum < max_number ? max(diff_cum, -charge_max) : max_number;
 
-      if(min_number + abs(max_number) >= charge_max) {
+      if(min_number + abs(max_number) > charge_max) {
         if(station->ideal - station->nbvp > 0)
           min_number = max_number;
         else
